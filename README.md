@@ -1,12 +1,26 @@
 # Shogi Move Destination Predictor
 
-将棋の次の一手予測を扱うリポジトリです。責務ごとにディレクトリを分けています。
+将棋の次の一手予測モデルと、その推論結果を確認するための Web アプリです。
 
 ## Structure
 
 - `web/`: React + Vite のフロントエンド
 - `server/`: FastAPI の推論 API
 - `shogi_ai/`: 学習コード、前処理、モデル定義、学習成果物
+
+## Dataset
+
+このプロジェクトは Kaggle の `Elite Shogi Games` を学習データ取得元として想定しています。
+
+- Dataset: `Elite Shogi Games`
+- Author: `suayptalha`
+- URL: `https://www.kaggle.com/datasets/suayptalha/elite-shogi-games`
+
+方針:
+
+- `shogi_games.csv` はリポジトリに含めません
+- 必要な場合は Kaggle から各自ダウンロードしてください
+- 学習済みモデル `shogi_ai/best_model.pt` はリポジトリに同梱します
 
 ## Local Development
 
@@ -35,15 +49,12 @@ npm run dev
 
 ## Notes
 
-- `server/` は `shogi_ai/` の `model.py`、`shogi_env.py`、`best_model.pt` を参照します。
-- `shogi_ai/best_model.pt` はリポジトリに同梱する想定です。
-- `shogi_ai/dataset.npz` は再生成できる中間生成物として `.gitignore` に入れています。
-- `shogi_ai/shogi_games.csv` は Kaggle から各自取得する前提で、リポジトリには含めない方針です。
-- 学習データの取得元は Kaggle の `Elite Shogi Games` を想定します:
-  https://www.kaggle.com/datasets/suayptalha/elite-shogi-games
+- `server/` は `shogi_ai/` の `model.py`、`shogi_env.py`、`best_model.pt` を参照します
+- `shogi_ai/dataset.npz` は再生成できる中間生成物として `.gitignore` に入れています
+- `shogi_ai/shogi_games.csv` は Kaggle 取得前提なので `.gitignore` に入れています
 
 ## License
 
-- このリポジトリは [MIT License](./LICENSE) です。
-- コードと同梱している `shogi_ai/best_model.pt` は、特に別記がない限り同じ MIT License で扱う想定です。
-- ただし、学習元データ `shogi_games.csv` は第三者データなので、このリポジトリから再配布しない方針にします。
+- このリポジトリは [MIT License](./LICENSE) です
+- 同梱している `shogi_ai/best_model.pt` も、特に別記がない限り同じ MIT License で扱う想定です
+- 学習元データ `shogi_games.csv` は第三者データなので、このリポジトリから再配布しない方針です
