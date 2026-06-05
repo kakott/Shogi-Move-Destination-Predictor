@@ -372,7 +372,7 @@ export default function ShogiVisualizer() {
           textShadow: "0 0 30px rgba(240,192,96,0.4)",
           margin: 0,
         }}>
-          将棋 次の一手 ビジュアライザー
+          将棋 次の盤面予測AI
         </h1>
         <p style={{ fontSize: "13px", color: "#8a7a5a", marginTop: "6px", letterSpacing: "0.1em" }}>
           赤いマス = モデルが予測した移動先候補
