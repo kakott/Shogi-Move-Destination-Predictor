@@ -293,8 +293,128 @@ def has_own_pawn_on_file(board: Board, col: int, owner: int) -> bool:
     return False
 
 
+def find_king(board: Board, owner: int) -> Optional[tuple[int, int]]:
+    """指定した手番の玉の座標を返す。"""
+    for r in range(9):
+        for c in range(9):
+            cell = board.grid[r][c]
+            if cell is not None and cell[0] == "K" and cell[1] == owner:
+                return r, c
+    return None
+
+
+def is_square_attacked(
+    board: Board,
+    row: int,
+    col: int,
+    attacker: int,
+) -> bool:
+    """指定マスが attacker の駒に攻撃されているか判定する。"""
+    for r in range(9):
+        for c in range(9):
+            cell = board.grid[r][c]
+            if cell is None or cell[1] != attacker:
+                continue
+            if any(
+                tr == row and tc == col
+                for _, _, tr, tc in piece_movement(board, r, c, attacker)
+            ):
+                return True
+    return False
+
+
+def copy_board(board: Board) -> Board:
+    """合法手判定用に盤面を複製する。"""
+    return Board(
+        grid=[row.copy() for row in board.grid],
+        hands=[hand.copy() for hand in board.hands],
+        turn=board.turn,
+    )
+
+
+def keeps_king_safe_after_move(
+    board: Board,
+    owner: int,
+    from_row: int,
+    from_col: int,
+    to_row: int,
+    to_col: int,
+    promote: bool = False,
+) -> bool:
+    """盤上の手を仮適用し、自玉が王手にならないか判定する。"""
+    next_board = copy_board(board)
+    cell = next_board.grid[from_row][from_col]
+    if cell is None or cell[1] != owner:
+        return False
+
+    piece, _, already_promoted = cell
+    next_board.grid[from_row][from_col] = None
+    next_board.grid[to_row][to_col] = (
+        piece,
+        owner,
+        already_promoted or promote,
+    )
+
+    king = find_king(next_board, owner)
+    if king is None:
+        return False
+    return not is_square_attacked(next_board, *king, attacker=1 - owner)
+
+
+def keeps_king_safe_after_drop(
+    board: Board,
+    owner: int,
+    piece: str,
+    to_row: int,
+    to_col: int,
+) -> bool:
+    """駒打ちを仮適用し、自玉が王手にならないか判定する。"""
+    next_board = copy_board(board)
+    next_board.grid[to_row][to_col] = (piece, owner, False)
+
+    king = find_king(next_board, owner)
+    if king is None:
+        return False
+    return not is_square_attacked(next_board, *king, attacker=1 - owner)
+
+
+def has_legal_board_move(board: Board, owner: int) -> bool:
+    """owner に自玉を安全にする盤上の応手が一つでもあるか調べる。"""
+    for r in range(9):
+        for c in range(9):
+            for fr, fc, tr, tc in piece_movement(board, r, c, owner):
+                target = board.grid[tr][tc]
+                if target is not None and target[0] == "K":
+                    continue
+                if keeps_king_safe_after_move(
+                    board, owner, fr, fc, tr, tc
+                ):
+                    return True
+    return False
+
+
+def is_pawn_drop_mate(
+    board: Board,
+    owner: int,
+    to_row: int,
+    to_col: int,
+) -> bool:
+    """その歩打ちが禁じ手の「打ち歩詰め」になるか判定する。"""
+    opponent = 1 - owner
+    opponent_king = find_king(board, opponent)
+    pawn_attack_row = to_row + (-1 if owner == 0 else 1)
+    if opponent_king != (pawn_attack_row, to_col):
+        return False
+
+    next_board = copy_board(board)
+    next_board.grid[to_row][to_col] = ("P", owner, False)
+
+    # 歩による王手は隣接しているため、駒打ちで遮ることはできない。
+    return not has_legal_board_move(next_board, opponent)
+
+
 def build_legal_mask_729(board: Board, is_sente: bool) -> np.ndarray:
-    """729次元の合法手マスク。手番側視点(=encode_board と同じ向き)で返す。"""
+    """自玉の安全も検証した729次元の合法手マスクを返す。"""
     mask = np.zeros(NUM_LABELS, dtype=bool)
     owner = 0 if is_sente else 1
 
@@ -307,6 +427,17 @@ def build_legal_mask_729(board: Board, is_sente: bool) -> np.ndarray:
                     continue
                 piece, _, promoted = cell
 
+                # 玉は実際には取らず、王手に対する応手の有無で終局する。
+                target = board.grid[tr][tc]
+                if target is not None and target[0] == "K":
+                    continue
+
+                # ピンされた駒の移動、王手放置、玉の利きへの移動を除く。
+                if not keeps_king_safe_after_move(
+                    board, owner, fr, fc, tr, tc
+                ):
+                    continue
+
                 # 「手番側視点」に座標を回転
                 if is_sente:
                     tr_n, tc_n = tr, tc
@@ -316,7 +447,7 @@ def build_legal_mask_729(board: Board, is_sente: bool) -> np.ndarray:
                 sq_idx = tr_n * 9 + tc_n
 
                 # 1) 不成移動: 必ず成らねばならない位置でなければ可
-                if not must_promote(piece, tr, is_sente):
+                if promoted or not must_promote(piece, tr, is_sente):
                     mask[sq_idx * 9 + 0] = True
 
                 # 2) 成る移動: 成れる駒で、敵陣絡みなら可
@@ -346,6 +477,12 @@ def build_legal_mask_729(board: Board, is_sente: bool) -> np.ndarray:
                     continue
                 # 二歩禁止
                 if p == "P" and has_own_pawn_on_file(board, c, owner):
+                    continue
+                # 打ち歩詰めは禁止。
+                if p == "P" and is_pawn_drop_mate(board, owner, r, c):
+                    continue
+                # 王手を遮れない駒打ちなど、自玉への王手が残る手は禁止。
+                if not keeps_king_safe_after_drop(board, owner, p, r, c):
                     continue
                 # ラベルは手番側視点
                 if is_sente:
@@ -400,26 +537,26 @@ async def predict(req: PredictRequest):
         # 1) フロントの表現 -> Board へ
         board = board_from_payload(req.grid, req.hands, req.is_sente)
 
-        # 2) encode_board で 42ch テンソル (手番側視点に正規化済)
+        # 2) 合法手を先に列挙。詰みなどで合法手がなければ候補は返さない。
+        mask = build_legal_mask_729(board, req.is_sente)
+        if not mask.any():
+            return {"predictions": []}
+
+        # 3) encode_board で 42ch テンソル (手番側視点に正規化済)
         x = encode_board(board)
         x = torch.from_numpy(x).unsqueeze(0).to(device)
 
-        # 3) 推論
+        # 4) 推論
         with torch.no_grad():
             logits = model(x)[0]
 
-        # 4) 合法手マスクを適用 (-inf で不可手を潰してから softmax)
-        mask = build_legal_mask_729(board, req.is_sente)
+        # 5) 合法手マスクを適用 (-inf で不可手を潰してから softmax)
         mask_t = torch.from_numpy(mask).to(device)
         logits = logits.masked_fill(~mask_t, float("-inf"))
 
-        if not torch.isfinite(logits).any():
-            # 合法手が一つもない場合 (詰みなど) は素のsoftmaxにフォールバック
-            probs = F.softmax(model(x)[0], dim=0)
-        else:
-            probs = F.softmax(logits, dim=0)
+        probs = F.softmax(logits, dim=0)
 
-        # 5) 上位 top_k を返す
+        # 6) 上位 top_k を返す
         k = max(1, min(int(req.top_k), 20))
         topv, topi = probs.topk(k)
         preds = []
