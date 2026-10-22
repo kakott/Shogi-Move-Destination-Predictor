@@ -1,0 +1,9 @@
+[flake8]
+exclude =
+    .git,
+    .pytest_cache,
+    .venv,
+    __pycache__,
+    dist,
+    node_modules
+

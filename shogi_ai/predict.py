@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -46,8 +45,8 @@ def main(args: argparse.Namespace) -> None:
     ).to(device)
     model.load_state_dict(ckpt["model"])
     model.eval()
-    print(f"モデル読み込み済 (epoch={ckpt.get('epoch','?')}, "
-          f"val_acc={ckpt.get('val_acc',0):.4f})")
+    print(f"モデル読み込み済 (epoch={ckpt.get('epoch', '?')}, "
+          f"val_acc={ckpt.get('val_acc', 0):.4f})")
 
     # 棋譜を進める
     board = Board.initial()

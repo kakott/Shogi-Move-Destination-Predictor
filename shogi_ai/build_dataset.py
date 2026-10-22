@@ -77,7 +77,7 @@ def build(csv_path: str, out_path: str, min_moves: int = 10) -> None:
             print(f"  進捗: {i + 1}/{len(df)} 対局処理, "
                   f"局面数={len(X_list)}")
 
-    print(f"\n=== 集計 ===")
+    print("\n=== 集計 ===")
     print(f"  完走/部分使用 対局: {n_games_ok}")
     print(f"  スキップ対局: {n_games_skipped}")
     print(f"  パース失敗 (途中で打ち切り): {n_parse_fail}")

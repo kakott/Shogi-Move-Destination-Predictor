@@ -44,7 +44,6 @@ from shogi_env import (
     FILE_CHARS,
     PIECE_TYPES,
     PROMOTABLE,
-    PROMOTED_LIST,
     RANK_CHARS,
     encode_board,
 )
@@ -311,10 +310,8 @@ def build_legal_mask_729(board: Board, is_sente: bool) -> np.ndarray:
                 # 「手番側視点」に座標を回転
                 if is_sente:
                     tr_n, tc_n = tr, tc
-                    fr_n = fr  # 成判定にはfromも必要
                 else:
                     tr_n, tc_n = 8 - tr, 8 - tc
-                    fr_n = 8 - fr  # 後手視点では fr_n も反転後の座標で判定
 
                 sq_idx = tr_n * 9 + tc_n
 
