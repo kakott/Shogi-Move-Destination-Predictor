@@ -1,3 +1,1 @@
-from .app import app as app
-
-__all__ = ["app"]
+"""将棋予測APIサーバーパッケージ。"""

@@ -1,5 +1,6 @@
 from shogi_ai.shogi_env import Board, encode_board, parse_move
-from server.app import DROPPABLE, build_legal_mask_729
+from shogi_ai.shogi_env import DROPPABLE
+from server.app.legal_moves import build_legal_mask_729
 
 
 def empty_board(turn: int = 0) -> Board:

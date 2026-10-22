@@ -31,7 +31,7 @@ cd server
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 `GET /health` で疎通確認できます。
@@ -49,6 +49,7 @@ npm run dev
 
 ## Notes
 
+- `server/app/` はHTTP入口、盤面変換、合法手判定、推論処理ごとに分割しています
 - `server/` は `shogi_ai/` の `model.py`、`shogi_env.py`、`best_model.pt` を参照します
 - `shogi_ai/dataset.npz` は再生成できる中間生成物として `.gitignore` に入れています
 - `shogi_ai/shogi_games.csv` は Kaggle 取得前提なので `.gitignore` に入れています

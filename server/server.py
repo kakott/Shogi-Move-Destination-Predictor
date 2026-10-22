@@ -1,6 +1,6 @@
 if __package__:
-    from .app import app as app
+    from .app.main import app as app
 else:
-    from app import app as app
+    from app.main import app as app
 
 __all__ = ["app"]
